@@ -69,6 +69,175 @@
 
 ---
 
+## 🎬 Demo
+
+<table>
+<tr>
+<td width="33%" align="center">
+
+### 📱 Android
+
+<!--
+To add Android demo:
+1. Record your screen using Android Studio or scrcpy
+2. Convert to GIF using: ffmpeg -i video.mp4 -vf "fps=15,scale=280:-1" android-demo.gif
+3. Add the GIF to /docs/demos/ folder
+4. Replace the placeholder below with: ![Android Demo](docs/demos/android-demo.gif)
+-->
+
+<p align="center">
+  <img src="https://via.placeholder.com/280x560/FF9933/FFFFFF?text=Android+Demo" alt="Android Demo"/>
+</p>
+
+<details>
+<summary>📋 How to add demo</summary>
+
+```bash
+# Record using scrcpy
+scrcpy --record android-demo.mp4
+
+# Convert to GIF
+ffmpeg -i android-demo.mp4 \
+  -vf "fps=15,scale=280:-1:flags=lanczos" \
+  -c:v gif docs/demos/android-demo.gif
+```
+
+</details>
+
+</td>
+<td width="33%" align="center">
+
+### 🍎 iOS
+
+<!--
+To add iOS demo:
+1. Record simulator: xcrun simctl io booted recordVideo ios-demo.mp4
+2. Or use QuickTime Player to record device
+3. Convert to GIF and add to /docs/demos/
+4. Replace the placeholder below
+-->
+
+<p align="center">
+  <img src="https://via.placeholder.com/280x560/007AFF/FFFFFF?text=iOS+Demo" alt="iOS Demo"/>
+</p>
+
+<details>
+<summary>📋 How to add demo</summary>
+
+```bash
+# Record iOS Simulator
+xcrun simctl io booted recordVideo ios-demo.mp4
+
+# Convert to GIF
+ffmpeg -i ios-demo.mp4 \
+  -vf "fps=15,scale=280:-1:flags=lanczos" \
+  -c:v gif docs/demos/ios-demo.gif
+```
+
+</details>
+
+</td>
+<td width="33%" align="center">
+
+### 💻 Desktop
+
+<!--
+To add Desktop demo:
+1. Use screen recording software (OBS, QuickTime, etc.)
+2. Convert to GIF
+3. Add to /docs/demos/
+4. Replace the placeholder below
+-->
+
+<p align="center">
+  <img src="https://via.placeholder.com/280x200/191970/FFFFFF?text=Desktop+Demo" alt="Desktop Demo"/>
+</p>
+
+<details>
+<summary>📋 How to add demo</summary>
+
+```bash
+# Record using ffmpeg (macOS)
+ffmpeg -f avfoundation -i "1" -t 30 desktop-demo.mp4
+
+# Convert to GIF
+ffmpeg -i desktop-demo.mp4 \
+  -vf "fps=15,scale=400:-1:flags=lanczos" \
+  -c:v gif docs/demos/desktop-demo.gif
+```
+
+</details>
+
+</td>
+</tr>
+</table>
+
+### 📸 Screenshots
+
+<table>
+<tr>
+<td align="center">
+<strong>🏠 Home</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Home+Screen" alt="Home"/>
+</td>
+<td align="center">
+<strong>🧘 Meditation</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Meditation" alt="Meditation"/>
+</td>
+<td align="center">
+<strong>⏱️ Timer</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Timer" alt="Timer"/>
+</td>
+<td align="center">
+<strong>📿 Quotes</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Quotes" alt="Quotes"/>
+</td>
+</tr>
+<tr>
+<td align="center">
+<strong>🔔 Prayers</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Prayers" alt="Prayers"/>
+</td>
+<td align="center">
+<strong>⏰ Reminders</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Reminders" alt="Reminders"/>
+</td>
+<td align="center">
+<strong>📖 Scripture</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Scripture" alt="Scripture"/>
+</td>
+<td align="center">
+<strong>📑 Reader</strong><br>
+<img src="https://via.placeholder.com/200x400/FFF8DC/FF9933?text=Reader" alt="Reader"/>
+</td>
+</tr>
+</table>
+
+<details>
+<summary>📋 How to add real screenshots</summary>
+
+1. **Take screenshots** on each platform
+2. **Create folder**: `mkdir -p docs/screenshots`
+3. **Add images** to the folder
+4. **Update README** - replace placeholder URLs with:
+   ```markdown
+   ![Home](docs/screenshots/home.png)
+   ![Meditation](docs/screenshots/meditation.png)
+   ```
+
+**Recommended sizes:**
+- Mobile: 1080x1920 or 1170x2532
+- Desktop: 1920x1080
+
+**Tools:**
+- Android: `adb exec-out screencap -p > screenshot.png`
+- iOS: `xcrun simctl io booted screenshot screenshot.png`
+- Desktop: System screenshot tool
+
+</details>
+
+---
+
 ## 🏗️ Architecture
 
 Siddhika follows **Clean Architecture** principles with clear separation of concerns across Presentation, Domain, and Data layers.
