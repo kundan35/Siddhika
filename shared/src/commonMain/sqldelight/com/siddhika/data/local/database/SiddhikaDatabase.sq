@@ -1,0 +1,197 @@
+-- Quote table
+CREATE TABLE QuoteEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    author TEXT NOT NULL,
+    source TEXT,
+    category TEXT NOT NULL,
+    isFavorite INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+-- Meditation table
+CREATE TABLE MeditationEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    durationMinutes INTEGER NOT NULL,
+    category TEXT NOT NULL,
+    imageUrl TEXT,
+    audioUrl TEXT
+);
+
+-- Meditation Session table (for tracking completed sessions)
+CREATE TABLE MeditationSessionEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    meditationId INTEGER NOT NULL,
+    completedAt INTEGER NOT NULL,
+    durationSeconds INTEGER NOT NULL,
+    FOREIGN KEY (meditationId) REFERENCES MeditationEntity(id)
+);
+
+-- Prayer table
+CREATE TABLE PrayerEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en'
+);
+
+-- Prayer Reminder table
+CREATE TABLE PrayerReminderEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prayerId INTEGER,
+    title TEXT NOT NULL,
+    time TEXT NOT NULL,
+    daysOfWeek TEXT NOT NULL,
+    isEnabled INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (prayerId) REFERENCES PrayerEntity(id)
+);
+
+-- Scripture table
+CREATE TABLE ScriptureEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'en',
+    totalChapters INTEGER NOT NULL DEFAULT 1
+);
+
+-- Bookmark table
+CREATE TABLE BookmarkEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scriptureId INTEGER NOT NULL,
+    chapterNumber INTEGER NOT NULL,
+    verseNumber INTEGER,
+    note TEXT,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (scriptureId) REFERENCES ScriptureEntity(id)
+);
+
+-- Quote queries
+getAllQuotes:
+SELECT * FROM QuoteEntity ORDER BY createdAt DESC;
+
+getQuoteById:
+SELECT * FROM QuoteEntity WHERE id = ?;
+
+getDailyQuote:
+SELECT * FROM QuoteEntity ORDER BY RANDOM() LIMIT 1;
+
+getFavoriteQuotes:
+SELECT * FROM QuoteEntity WHERE isFavorite = 1 ORDER BY createdAt DESC;
+
+getQuotesByCategory:
+SELECT * FROM QuoteEntity WHERE category = ? ORDER BY createdAt DESC;
+
+insertQuote:
+INSERT INTO QuoteEntity (text, author, source, category, isFavorite, createdAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateQuoteFavorite:
+UPDATE QuoteEntity SET isFavorite = ? WHERE id = ?;
+
+deleteQuote:
+DELETE FROM QuoteEntity WHERE id = ?;
+
+-- Meditation queries
+getAllMeditations:
+SELECT * FROM MeditationEntity;
+
+getMeditationById:
+SELECT * FROM MeditationEntity WHERE id = ?;
+
+getMeditationsByCategory:
+SELECT * FROM MeditationEntity WHERE category = ?;
+
+insertMeditation:
+INSERT INTO MeditationEntity (title, description, durationMinutes, category, imageUrl, audioUrl)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Meditation Session queries
+getAllSessions:
+SELECT * FROM MeditationSessionEntity ORDER BY completedAt DESC;
+
+getSessionsByMeditationId:
+SELECT * FROM MeditationSessionEntity WHERE meditationId = ? ORDER BY completedAt DESC;
+
+insertSession:
+INSERT INTO MeditationSessionEntity (meditationId, completedAt, durationSeconds)
+VALUES (?, ?, ?);
+
+getTotalMeditationTime:
+SELECT SUM(durationSeconds) FROM MeditationSessionEntity;
+
+-- Prayer queries
+getAllPrayers:
+SELECT * FROM PrayerEntity;
+
+getPrayerById:
+SELECT * FROM PrayerEntity WHERE id = ?;
+
+getPrayersByCategory:
+SELECT * FROM PrayerEntity WHERE category = ?;
+
+insertPrayer:
+INSERT INTO PrayerEntity (title, content, category, language)
+VALUES (?, ?, ?, ?);
+
+-- Prayer Reminder queries
+getAllReminders:
+SELECT * FROM PrayerReminderEntity ORDER BY time;
+
+getEnabledReminders:
+SELECT * FROM PrayerReminderEntity WHERE isEnabled = 1 ORDER BY time;
+
+getReminderById:
+SELECT * FROM PrayerReminderEntity WHERE id = ?;
+
+insertReminder:
+INSERT INTO PrayerReminderEntity (prayerId, title, time, daysOfWeek, isEnabled)
+VALUES (?, ?, ?, ?, ?);
+
+updateReminderEnabled:
+UPDATE PrayerReminderEntity SET isEnabled = ? WHERE id = ?;
+
+deleteReminder:
+DELETE FROM PrayerReminderEntity WHERE id = ?;
+
+-- Scripture queries
+getAllScriptures:
+SELECT * FROM ScriptureEntity;
+
+getScriptureById:
+SELECT * FROM ScriptureEntity WHERE id = ?;
+
+getScripturesByCategory:
+SELECT * FROM ScriptureEntity WHERE category = ?;
+
+insertScripture:
+INSERT INTO ScriptureEntity (title, description, content, category, language, totalChapters)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Bookmark queries
+getAllBookmarks:
+SELECT * FROM BookmarkEntity ORDER BY createdAt DESC;
+
+getBookmarksByScripture:
+SELECT * FROM BookmarkEntity WHERE scriptureId = ? ORDER BY chapterNumber, verseNumber;
+
+getBookmarkById:
+SELECT * FROM BookmarkEntity WHERE id = ?;
+
+insertBookmark:
+INSERT INTO BookmarkEntity (scriptureId, chapterNumber, verseNumber, note, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
+updateBookmarkNote:
+UPDATE BookmarkEntity SET note = ? WHERE id = ?;
+
+deleteBookmark:
+DELETE FROM BookmarkEntity WHERE id = ?;
+
+isVerseBookmarked:
+SELECT COUNT(*) FROM BookmarkEntity WHERE scriptureId = ? AND chapterNumber = ? AND verseNumber = ?;
