@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK17'
+    }
+
+    environment {
+        GRADLE_OPTS = '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g'
+        ANDROID_HOME = '/opt/android-sdk'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Shared Module') {
+            steps {
+                sh './gradlew :shared:build -x test'
+            }
+        }
+
+        stage('Test Shared Module') {
+            steps {
+                sh './gradlew :shared:allTests'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/build/test-results/*/*.xml'
+                }
+            }
+        }
+
+        stage('Build Android') {
+            steps {
+                sh './gradlew :androidApp:assembleDebug'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'androidApp/build/outputs/apk/debug/*.apk', fingerprint: true
+                }
+            }
+        }
+
+        stage('Build Desktop') {
+            steps {
+                sh './gradlew :composeApp:packageDistributionForCurrentOS'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'composeApp/build/compose/binaries/**/*', fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Build succeeded!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
