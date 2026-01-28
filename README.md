@@ -361,8 +361,11 @@ cd Siddhika
 
 ### 1. Start the Backend API
 
+The backend is in a separate repository: [kundan35/siddhika-backend](https://github.com/kundan35/siddhika-backend)
+
 ```bash
-cd backend
+git clone https://github.com/kundan35/siddhika-backend.git
+cd siddhika-backend
 ./gradlew bootRun
 ```
 
@@ -408,7 +411,9 @@ open iosApp/iosApp.xcodeproj
 
 ## Backend API
 
-The Spring Boot backend serves spiritual content via REST endpoints. Data is held in-memory from seed data.
+The Spring Boot backend lives in a separate repository: [kundan35/siddhika-backend](https://github.com/kundan35/siddhika-backend)
+
+It serves spiritual content via REST endpoints. Data is held in-memory from seed data.
 
 ### Endpoints
 
@@ -522,15 +527,6 @@ Siddhika/
 |       +-- androidMain/             # Android: DB driver, network, auth
 |       +-- iosMain/                 # iOS: DB driver, network, auth
 |       +-- desktopMain/             # Desktop: DB driver, network
-|
-+-- backend/                       # Spring Boot REST API
-|   +-- src/main/kotlin/com/siddhika/backend/
-|   |   +-- SiddhikaBackendApplication.kt
-|   |   +-- controller/            # REST controllers
-|   |   +-- model/                 # Data models
-|   |   +-- data/                  # Seed data
-|   +-- src/main/resources/
-|       +-- application.yml
 |
 +-- gradle/
     +-- libs.versions.toml           # Version catalog
