@@ -39,6 +39,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            // Firebase KMP
+            implementation(libs.firebase.auth)
+            implementation(libs.firebase.common)
         }
 
         androidMain.dependencies {
@@ -46,6 +49,12 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.koin.android)
+            // DataStore for Android
+            implementation(libs.datastore.preferences)
+            // Credentials for Google Sign-In
+            implementation(libs.credentials)
+            implementation(libs.credentials.play.services)
+            implementation(libs.googleid)
         }
 
         iosMain.dependencies {

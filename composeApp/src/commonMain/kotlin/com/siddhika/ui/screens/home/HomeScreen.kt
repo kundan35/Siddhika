@@ -10,10 +10,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,8 +31,11 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
 import com.siddhika.ui.components.DailyQuoteCard
 import com.siddhika.ui.components.HomeFeatureCard
+import com.siddhika.ui.components.LoadingContent
+import com.siddhika.ui.screens.auth.ProfileScreen
 import com.siddhika.ui.screens.meditation.MeditationListScreen
 import com.siddhika.ui.screens.prayers.PrayerListScreen
 import com.siddhika.ui.screens.quotes.QuotesListScreen
@@ -42,7 +48,7 @@ class HomeScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<HomeViewModel>()
-        val dailyQuote by viewModel.dailyQuote.collectAsState()
+        val dailyQuoteState by viewModel.dailyQuote.collectAsState()
 
         Scaffold(
             topBar = {
@@ -52,6 +58,15 @@ class HomeScreen : Screen {
                             text = "Siddhika",
                             style = MaterialTheme.typography.headlineMedium
                         )
+                    },
+                    actions = {
+                        IconButton(onClick = { navigator.push(ProfileScreen()) }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
@@ -72,12 +87,19 @@ class HomeScreen : Screen {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Daily Quote Card
-                DailyQuoteCard(
-                    quote = dailyQuote,
-                    onFavoriteClick = { quote ->
-                        viewModel.toggleFavorite(quote)
+                when (val s = dailyQuoteState) {
+                    is UiState.Loading -> LoadingContent()
+                    is UiState.Empty -> { /* No daily quote — skip section */ }
+                    is UiState.Error -> { /* Silently skip on home screen */ }
+                    is UiState.Success -> {
+                        DailyQuoteCard(
+                            quote = s.data,
+                            onFavoriteClick = { quote ->
+                                viewModel.toggleFavorite(quote)
+                            }
+                        )
                     }
-                )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

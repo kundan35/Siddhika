@@ -5,35 +5,60 @@ import app.cash.sqldelight.coroutines.mapToList
 import com.siddhika.core.util.DateTimeUtil
 import com.siddhika.data.local.database.SiddhikaDatabase
 import com.siddhika.data.mapper.toDomain
+import com.siddhika.data.remote.api.PrayerApiService
+import com.siddhika.data.remote.mapper.toDomain
 import com.siddhika.domain.model.Prayer
 import com.siddhika.domain.model.PrayerReminder
 import com.siddhika.domain.repository.PrayerRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class PrayerRepositoryImpl(
-    private val database: SiddhikaDatabase
+    private val database: SiddhikaDatabase,
+    private val apiService: PrayerApiService
 ) : PrayerRepository {
 
     private val queries = database.siddhikaDatabaseQueries
 
-    override fun getAllPrayers(): Flow<List<Prayer>> =
-        queries.getAllPrayers()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getAllPrayers(): Flow<List<Prayer>> = flow {
+        try {
+            val remote = apiService.getAll().map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getAllPrayers()
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
-    override fun getPrayersByCategory(category: String): Flow<List<Prayer>> =
-        queries.getPrayersByCategory(category)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getPrayersByCategory(category: String): Flow<List<Prayer>> = flow {
+        try {
+            val remote = apiService.getByCategory(category).map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getPrayersByCategory(category)
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
     override suspend fun getPrayerById(id: Long): Prayer? = withContext(Dispatchers.IO) {
-        queries.getPrayerById(id).executeAsOneOrNull()?.toDomain()
+        try {
+            apiService.getById(id).toDomain()
+        } catch (_: Exception) {
+            queries.getPrayerById(id).executeAsOneOrNull()?.toDomain()
+        }
     }
 
     override suspend fun addPrayer(prayer: Prayer) = withContext(Dispatchers.IO) {

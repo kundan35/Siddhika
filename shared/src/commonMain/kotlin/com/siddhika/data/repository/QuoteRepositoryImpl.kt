@@ -6,31 +6,52 @@ import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.siddhika.core.util.DateTimeUtil
 import com.siddhika.data.local.database.SiddhikaDatabase
 import com.siddhika.data.mapper.toDomain
+import com.siddhika.data.remote.api.QuoteApiService
+import com.siddhika.data.remote.mapper.toDomain
 import com.siddhika.domain.model.Quote
 import com.siddhika.domain.repository.QuoteRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class QuoteRepositoryImpl(
-    private val database: SiddhikaDatabase
+    private val database: SiddhikaDatabase,
+    private val apiService: QuoteApiService
 ) : QuoteRepository {
 
     private val queries = database.siddhikaDatabaseQueries
 
-    override fun getAllQuotes(): Flow<List<Quote>> =
-        queries.getAllQuotes()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getAllQuotes(): Flow<List<Quote>> = flow {
+        try {
+            val remote = apiService.getAll().map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getAllQuotes()
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
-    override fun getDailyQuote(): Flow<Quote?> =
-        queries.getDailyQuote()
-            .asFlow()
-            .mapToOneOrNull(Dispatchers.IO)
-            .map { it?.toDomain() }
+    override fun getDailyQuote(): Flow<Quote?> = flow {
+        try {
+            val remote = apiService.getAll().map { it.toDomain() }
+            emit(remote.randomOrNull())
+        } catch (_: Exception) {
+            emitAll(
+                queries.getDailyQuote()
+                    .asFlow()
+                    .mapToOneOrNull(Dispatchers.IO)
+                    .map { it?.toDomain() }
+            )
+        }
+    }
 
     override fun getFavoriteQuotes(): Flow<List<Quote>> =
         queries.getFavoriteQuotes()
@@ -38,14 +59,26 @@ class QuoteRepositoryImpl(
             .mapToList(Dispatchers.IO)
             .map { entities -> entities.map { it.toDomain() } }
 
-    override fun getQuotesByCategory(category: String): Flow<List<Quote>> =
-        queries.getQuotesByCategory(category)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getQuotesByCategory(category: String): Flow<List<Quote>> = flow {
+        try {
+            val remote = apiService.getByCategory(category).map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getQuotesByCategory(category)
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
     override suspend fun getQuoteById(id: Long): Quote? = withContext(Dispatchers.IO) {
-        queries.getQuoteById(id).executeAsOneOrNull()?.toDomain()
+        try {
+            apiService.getById(id).toDomain()
+        } catch (_: Exception) {
+            queries.getQuoteById(id).executeAsOneOrNull()?.toDomain()
+        }
     }
 
     override suspend fun addQuote(quote: Quote) = withContext(Dispatchers.IO) {

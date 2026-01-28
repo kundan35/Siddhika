@@ -25,6 +25,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
+import com.siddhika.ui.components.EmptyContent
+import com.siddhika.ui.components.ErrorContent
+import com.siddhika.ui.components.LoadingContent
 import com.siddhika.ui.components.MeditationCard
 
 class MeditationListScreen : Screen {
@@ -34,7 +38,7 @@ class MeditationListScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<MeditationViewModel>()
-        val meditations by viewModel.meditations.collectAsState()
+        val state by viewModel.meditations.collectAsState()
 
         Scaffold(
             topBar = {
@@ -60,20 +64,34 @@ class MeditationListScreen : Screen {
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(meditations) { meditation ->
-                    MeditationCard(
-                        meditation = meditation,
-                        onClick = {
-                            navigator.push(MeditationTimerScreen(meditation.id))
+            when (val s = state) {
+                is UiState.Loading -> LoadingContent(modifier = Modifier.padding(paddingValues))
+                is UiState.Empty -> EmptyContent(
+                    message = "No meditations available",
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Error -> ErrorContent(
+                    message = s.message,
+                    onRetry = { viewModel.retry() },
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(s.data) { meditation ->
+                            MeditationCard(
+                                meditation = meditation,
+                                onClick = {
+                                    navigator.push(MeditationTimerScreen(meditation.id))
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }

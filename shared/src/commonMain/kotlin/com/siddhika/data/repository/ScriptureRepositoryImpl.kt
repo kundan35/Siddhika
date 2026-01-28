@@ -5,35 +5,60 @@ import app.cash.sqldelight.coroutines.mapToList
 import com.siddhika.core.util.DateTimeUtil
 import com.siddhika.data.local.database.SiddhikaDatabase
 import com.siddhika.data.mapper.toDomain
+import com.siddhika.data.remote.api.ScriptureApiService
+import com.siddhika.data.remote.mapper.toDomain
 import com.siddhika.domain.model.Bookmark
 import com.siddhika.domain.model.Scripture
 import com.siddhika.domain.repository.ScriptureRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class ScriptureRepositoryImpl(
-    private val database: SiddhikaDatabase
+    private val database: SiddhikaDatabase,
+    private val apiService: ScriptureApiService
 ) : ScriptureRepository {
 
     private val queries = database.siddhikaDatabaseQueries
 
-    override fun getAllScriptures(): Flow<List<Scripture>> =
-        queries.getAllScriptures()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getAllScriptures(): Flow<List<Scripture>> = flow {
+        try {
+            val remote = apiService.getAll().map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getAllScriptures()
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
-    override fun getScripturesByCategory(category: String): Flow<List<Scripture>> =
-        queries.getScripturesByCategory(category)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getScripturesByCategory(category: String): Flow<List<Scripture>> = flow {
+        try {
+            val remote = apiService.getByCategory(category).map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getScripturesByCategory(category)
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
     override suspend fun getScriptureById(id: Long): Scripture? = withContext(Dispatchers.IO) {
-        queries.getScriptureById(id).executeAsOneOrNull()?.toDomain()
+        try {
+            apiService.getById(id).toDomain()
+        } catch (_: Exception) {
+            queries.getScriptureById(id).executeAsOneOrNull()?.toDomain()
+        }
     }
 
     override suspend fun addScripture(scripture: Scripture) = withContext(Dispatchers.IO) {

@@ -3,6 +3,7 @@ package com.siddhika.ui.screens.meditation
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.siddhika.core.util.Constants
+import com.siddhika.core.util.UiState
 import com.siddhika.domain.model.Meditation
 import com.siddhika.domain.usecase.meditation.GetMeditationsUseCase
 import com.siddhika.domain.usecase.meditation.SaveMeditationSessionUseCase
@@ -13,19 +14,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MeditationViewModel(
-    getMeditationsUseCase: GetMeditationsUseCase
+    private val getMeditationsUseCase: GetMeditationsUseCase
 ) : ScreenModel {
 
-    val meditations: StateFlow<List<Meditation>> = getMeditationsUseCase()
+    val meditations: StateFlow<UiState<List<Meditation>>> = getMeditationsUseCase()
+        .map { list ->
+            if (list.isEmpty()) UiState.Empty else UiState.Success(list)
+        }
+        .catch { emit(UiState.Error(it.message ?: "Failed to load meditations")) }
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = UiState.Loading
         )
+
+    fun retry() {
+        // Flow from use case is reactive; no explicit retry needed for Room/SQLDelight flows.
+        // This is a no-op placeholder for UI consistency.
+    }
 }
 
 class MeditationTimerViewModel(
@@ -34,8 +46,8 @@ class MeditationTimerViewModel(
     private val saveMeditationSessionUseCase: SaveMeditationSessionUseCase
 ) : ScreenModel {
 
-    private val _meditation = MutableStateFlow<Meditation?>(null)
-    val meditation: StateFlow<Meditation?> = _meditation.asStateFlow()
+    private val _meditation = MutableStateFlow<UiState<Meditation>>(UiState.Loading)
+    val meditation: StateFlow<UiState<Meditation>> = _meditation.asStateFlow()
 
     private val _totalSeconds = MutableStateFlow(0)
     val totalSeconds: StateFlow<Int> = _totalSeconds.asStateFlow()
@@ -54,15 +66,26 @@ class MeditationTimerViewModel(
     }
 
     private fun loadMeditation() {
+        _meditation.value = UiState.Loading
         screenModelScope.launch {
-            val med = getMeditationsUseCase.byId(meditationId)
-            _meditation.value = med
-            med?.let {
-                val seconds = it.durationMinutes * 60
-                _totalSeconds.value = seconds
-                _remainingSeconds.value = seconds
+            try {
+                val med = getMeditationsUseCase.byId(meditationId)
+                if (med != null) {
+                    _meditation.value = UiState.Success(med)
+                    val seconds = med.durationMinutes * 60
+                    _totalSeconds.value = seconds
+                    _remainingSeconds.value = seconds
+                } else {
+                    _meditation.value = UiState.Empty
+                }
+            } catch (e: Exception) {
+                _meditation.value = UiState.Error(e.message ?: "Failed to load meditation")
             }
         }
+    }
+
+    fun retry() {
+        loadMeditation()
     }
 
     fun startTimer() {

@@ -32,6 +32,17 @@
         <key>UIColorName</key>
         <string>LaunchScreenBackground</string>
     </dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.454750104809-vfj2fbnn460iqpqov7advebanfvc8m44</string>
+            </array>
+        </dict>
+    </array>
     <key>UIRequiredDeviceCapabilities</key>
     <array>
         <string>armv7</string>

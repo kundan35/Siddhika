@@ -1,7 +1,6 @@
 package com.siddhika.ui.screens.scripture
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -21,13 +20,16 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
+import com.siddhika.ui.components.EmptyContent
+import com.siddhika.ui.components.ErrorContent
+import com.siddhika.ui.components.LoadingContent
 import com.siddhika.ui.components.ScriptureCard
 
 class ScriptureListScreen : Screen {
@@ -37,7 +39,7 @@ class ScriptureListScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<ScriptureViewModel>()
-        val scriptures by viewModel.scriptures.collectAsState()
+        val state by viewModel.scriptures.collectAsState()
 
         Scaffold(
             topBar = {
@@ -71,34 +73,33 @@ class ScriptureListScreen : Screen {
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-            if (scriptures.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No scriptures available",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(scriptures) { scripture ->
-                        ScriptureCard(
-                            scripture = scripture,
-                            onClick = {
-                                navigator.push(ScriptureReaderScreen(scripture.id))
-                            }
-                        )
+            when (val s = state) {
+                is UiState.Loading -> LoadingContent(modifier = Modifier.padding(paddingValues))
+                is UiState.Empty -> EmptyContent(
+                    message = "No scriptures available",
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Error -> ErrorContent(
+                    message = s.message,
+                    onRetry = { viewModel.retry() },
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(s.data) { scripture ->
+                            ScriptureCard(
+                                scripture = scripture,
+                                onClick = {
+                                    navigator.push(ScriptureReaderScreen(scripture.id))
+                                }
+                            )
+                        }
                     }
                 }
             }

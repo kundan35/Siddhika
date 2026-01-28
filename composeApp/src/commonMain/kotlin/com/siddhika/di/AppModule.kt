@@ -1,5 +1,9 @@
 package com.siddhika.di
 
+import com.siddhika.ui.screens.auth.ForgotPasswordViewModel
+import com.siddhika.ui.screens.auth.LoginViewModel
+import com.siddhika.ui.screens.auth.ProfileViewModel
+import com.siddhika.ui.screens.auth.RegisterViewModel
 import com.siddhika.ui.screens.home.HomeViewModel
 import com.siddhika.ui.screens.meditation.MeditationTimerViewModel
 import com.siddhika.ui.screens.meditation.MeditationViewModel
@@ -14,7 +18,13 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 
 val appModule = module {
-    // ViewModels
+    // Auth ViewModels
+    factoryOf(::LoginViewModel)
+    factoryOf(::RegisterViewModel)
+    factoryOf(::ForgotPasswordViewModel)
+    factoryOf(::ProfileViewModel)
+
+    // Home
     factoryOf(::HomeViewModel)
 
     // Meditation

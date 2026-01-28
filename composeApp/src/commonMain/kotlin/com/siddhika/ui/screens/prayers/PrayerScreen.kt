@@ -36,6 +36,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
+import com.siddhika.ui.components.EmptyContent
+import com.siddhika.ui.components.ErrorContent
+import com.siddhika.ui.components.LoadingContent
 import com.siddhika.ui.components.PrayerCard
 import com.siddhika.ui.components.ReminderCard
 
@@ -46,7 +50,7 @@ class PrayerListScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<PrayerViewModel>()
-        val prayers by viewModel.prayers.collectAsState()
+        val prayersState by viewModel.prayers.collectAsState()
         val reminders by viewModel.reminders.collectAsState()
 
         var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -112,18 +116,28 @@ class PrayerListScreen : Screen {
 
                 when (selectedTabIndex) {
                     0 -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(prayers) { prayer ->
-                                PrayerCard(
-                                    prayer = prayer,
-                                    onClick = {
-                                        navigator.push(PrayerDetailScreen(prayer.id))
+                        when (val s = prayersState) {
+                            is UiState.Loading -> LoadingContent()
+                            is UiState.Empty -> EmptyContent(message = "No prayers available")
+                            is UiState.Error -> ErrorContent(
+                                message = s.message,
+                                onRetry = { viewModel.retry() }
+                            )
+                            is UiState.Success -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(s.data) { prayer ->
+                                        PrayerCard(
+                                            prayer = prayer,
+                                            onClick = {
+                                                navigator.push(PrayerDetailScreen(prayer.id))
+                                            }
+                                        )
                                     }
-                                )
+                                }
                             }
                         }
                     }

@@ -28,6 +28,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
+import com.siddhika.ui.components.EmptyContent
+import com.siddhika.ui.components.ErrorContent
+import com.siddhika.ui.components.LoadingContent
 import org.koin.core.parameter.parametersOf
 
 data class ScriptureReaderScreen(val scriptureId: Long) : Screen {
@@ -38,15 +42,20 @@ data class ScriptureReaderScreen(val scriptureId: Long) : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<ScriptureReaderViewModel> { parametersOf(scriptureId) }
 
-        val scripture by viewModel.scripture.collectAsState()
+        val state by viewModel.scripture.collectAsState()
         val isBookmarked by viewModel.isBookmarked.collectAsState()
+
+        val titleText = when (val s = state) {
+            is UiState.Success -> s.data.title
+            else -> "Scripture"
+        }
 
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            text = scripture?.title ?: "Scripture",
+                            text = titleText,
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
@@ -59,15 +68,17 @@ data class ScriptureReaderScreen(val scriptureId: Long) : Screen {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { viewModel.toggleBookmark() }) {
-                            Icon(
-                                imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isBookmarked) "Remove bookmark" else "Add bookmark",
-                                tint = if (isBookmarked)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        if (state is UiState.Success) {
+                            IconButton(onClick = { viewModel.toggleBookmark() }) {
+                                Icon(
+                                    imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = if (isBookmarked) "Remove bookmark" else "Add bookmark",
+                                    tint = if (isBookmarked)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -77,42 +88,55 @@ data class ScriptureReaderScreen(val scriptureId: Long) : Screen {
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-            scripture?.let { s ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 20.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Spacer(modifier = Modifier.height(16.dp))
+            when (val s = state) {
+                is UiState.Loading -> LoadingContent(modifier = Modifier.padding(paddingValues))
+                is UiState.Empty -> EmptyContent(
+                    message = "Scripture not found",
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Error -> ErrorContent(
+                    message = s.message,
+                    onRetry = { viewModel.retry() },
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Success -> {
+                    val s2 = s.data
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 20.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = s.description,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                        Text(
+                            text = s2.description,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = s.category.replace("_", " ").split(" ").joinToString(" ") {
-                            it.replaceFirstChar { c -> c.uppercase() }
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Text(
+                            text = s2.category.replace("_", " ").split(" ").joinToString(" ") {
+                                it.replaceFirstChar { c -> c.uppercase() }
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    Text(
-                        text = s.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.6
-                    )
+                        Text(
+                            text = s2.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.6
+                        )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
                 }
             }
         }

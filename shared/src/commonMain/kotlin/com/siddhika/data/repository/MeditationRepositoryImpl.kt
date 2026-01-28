@@ -4,35 +4,60 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.siddhika.data.local.database.SiddhikaDatabase
 import com.siddhika.data.mapper.toDomain
+import com.siddhika.data.remote.api.MeditationApiService
+import com.siddhika.data.remote.mapper.toDomain
 import com.siddhika.domain.model.Meditation
 import com.siddhika.domain.model.MeditationSession
 import com.siddhika.domain.repository.MeditationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class MeditationRepositoryImpl(
-    private val database: SiddhikaDatabase
+    private val database: SiddhikaDatabase,
+    private val apiService: MeditationApiService
 ) : MeditationRepository {
 
     private val queries = database.siddhikaDatabaseQueries
 
-    override fun getAllMeditations(): Flow<List<Meditation>> =
-        queries.getAllMeditations()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getAllMeditations(): Flow<List<Meditation>> = flow {
+        try {
+            val remote = apiService.getAll().map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getAllMeditations()
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
-    override fun getMeditationsByCategory(category: String): Flow<List<Meditation>> =
-        queries.getMeditationsByCategory(category)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities -> entities.map { it.toDomain() } }
+    override fun getMeditationsByCategory(category: String): Flow<List<Meditation>> = flow {
+        try {
+            val remote = apiService.getByCategory(category).map { it.toDomain() }
+            emit(remote)
+        } catch (_: Exception) {
+            emitAll(
+                queries.getMeditationsByCategory(category)
+                    .asFlow()
+                    .mapToList(Dispatchers.IO)
+                    .map { entities -> entities.map { it.toDomain() } }
+            )
+        }
+    }
 
     override suspend fun getMeditationById(id: Long): Meditation? = withContext(Dispatchers.IO) {
-        queries.getMeditationById(id).executeAsOneOrNull()?.toDomain()
+        try {
+            apiService.getById(id).toDomain()
+        } catch (_: Exception) {
+            queries.getMeditationById(id).executeAsOneOrNull()?.toDomain()
+        }
     }
 
     override suspend fun addMeditation(meditation: Meditation) = withContext(Dispatchers.IO) {

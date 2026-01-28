@@ -1,6 +1,7 @@
 package com.siddhika.android
 
 import android.app.Application
+import com.siddhika.core.di.networkModule
 import com.siddhika.core.di.platformModule
 import com.siddhika.core.di.sharedModule
 import com.siddhika.data.SeedData
@@ -18,11 +19,11 @@ class SiddhikaApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@SiddhikaApplication)
-            modules(platformModule, sharedModule, appModule)
+            modules(platformModule, networkModule, sharedModule, appModule)
         }
 
         // Seed the database with initial data
-        val database: SiddhikaDatabase by inject()
-        SeedData.populateDatabase(database)
+        //val database: SiddhikaDatabase by inject()
+        //SeedData.populateDatabase(database)
     }
 }

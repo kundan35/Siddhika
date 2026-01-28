@@ -27,6 +27,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.siddhika.core.util.UiState
+import com.siddhika.ui.components.EmptyContent
+import com.siddhika.ui.components.ErrorContent
+import com.siddhika.ui.components.LoadingContent
 import org.koin.core.parameter.parametersOf
 
 data class PrayerDetailScreen(val prayerId: Long) : Screen {
@@ -36,14 +40,19 @@ data class PrayerDetailScreen(val prayerId: Long) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<PrayerDetailViewModel> { parametersOf(prayerId) }
-        val prayer by viewModel.prayer.collectAsState()
+        val state by viewModel.prayer.collectAsState()
+
+        val titleText = when (val s = state) {
+            is UiState.Success -> s.data.title
+            else -> "Prayer"
+        }
 
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            text = prayer?.title ?: "Prayer",
+                            text = titleText,
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
@@ -56,15 +65,16 @@ data class PrayerDetailScreen(val prayerId: Long) : Screen {
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
-                            prayer?.let {
-                                navigator.push(AddReminderScreen(it.id, it.title))
+                        if (state is UiState.Success) {
+                            val p = (state as UiState.Success).data
+                            IconButton(onClick = {
+                                navigator.push(AddReminderScreen(p.id, p.title))
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationAdd,
+                                    contentDescription = "Set Reminder"
+                                )
                             }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationAdd,
-                                contentDescription = "Set Reminder"
-                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -74,28 +84,41 @@ data class PrayerDetailScreen(val prayerId: Long) : Screen {
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-            prayer?.let { p ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = p.category.replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+            when (val s = state) {
+                is UiState.Loading -> LoadingContent(modifier = Modifier.padding(paddingValues))
+                is UiState.Empty -> EmptyContent(
+                    message = "Prayer not found",
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Error -> ErrorContent(
+                    message = s.message,
+                    onRetry = { viewModel.retry() },
+                    modifier = Modifier.padding(paddingValues)
+                )
+                is UiState.Success -> {
+                    val p = s.data
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(24.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = p.category.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = p.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.5
-                    )
+                        Text(
+                            text = p.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.5
+                        )
+                    }
                 }
             }
         }

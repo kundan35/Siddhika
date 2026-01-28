@@ -1,13 +1,25 @@
 package com.siddhika.core.di
 
+import com.siddhika.data.repository.AuthRepositoryImpl
 import com.siddhika.data.repository.MeditationRepositoryImpl
 import com.siddhika.data.repository.PrayerRepositoryImpl
 import com.siddhika.data.repository.QuoteRepositoryImpl
 import com.siddhika.data.repository.ScriptureRepositoryImpl
+import com.siddhika.domain.repository.AuthRepository
 import com.siddhika.domain.repository.MeditationRepository
 import com.siddhika.domain.repository.PrayerRepository
 import com.siddhika.domain.repository.QuoteRepository
 import com.siddhika.domain.repository.ScriptureRepository
+import com.siddhika.domain.usecase.auth.DeleteAccountUseCase
+import com.siddhika.domain.usecase.auth.GetAuthStateUseCase
+import com.siddhika.domain.usecase.auth.SendEmailVerificationUseCase
+import com.siddhika.domain.usecase.auth.SendPasswordResetUseCase
+import com.siddhika.domain.usecase.auth.SignInWithAppleUseCase
+import com.siddhika.domain.usecase.auth.SignInWithEmailUseCase
+import com.siddhika.domain.usecase.auth.SignInWithGoogleUseCase
+import com.siddhika.domain.usecase.auth.SignOutUseCase
+import com.siddhika.domain.usecase.auth.SignUpWithEmailUseCase
+import com.siddhika.domain.usecase.auth.UpdateProfileUseCase
 import com.siddhika.domain.usecase.meditation.GetMeditationStatsUseCase
 import com.siddhika.domain.usecase.meditation.GetMeditationsUseCase
 import com.siddhika.domain.usecase.meditation.SaveMeditationSessionUseCase
@@ -26,11 +38,24 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val sharedModule = module {
-    // Repositories
-    singleOf(::QuoteRepositoryImpl) bind QuoteRepository::class
-    singleOf(::MeditationRepositoryImpl) bind MeditationRepository::class
-    singleOf(::PrayerRepositoryImpl) bind PrayerRepository::class
-    singleOf(::ScriptureRepositoryImpl) bind ScriptureRepository::class
+    // Repositories (injected with both database and API service)
+    single<QuoteRepository> { QuoteRepositoryImpl(get(), get()) }
+    single<MeditationRepository> { MeditationRepositoryImpl(get(), get()) }
+    single<PrayerRepository> { PrayerRepositoryImpl(get(), get()) }
+    single<ScriptureRepository> { ScriptureRepositoryImpl(get(), get()) }
+    singleOf(::AuthRepositoryImpl) bind AuthRepository::class
+
+    // Auth Use Cases
+    factoryOf(::GetAuthStateUseCase)
+    factoryOf(::SignInWithEmailUseCase)
+    factoryOf(::SignUpWithEmailUseCase)
+    factoryOf(::SignInWithGoogleUseCase)
+    factoryOf(::SignInWithAppleUseCase)
+    factoryOf(::SignOutUseCase)
+    factoryOf(::SendPasswordResetUseCase)
+    factoryOf(::SendEmailVerificationUseCase)
+    factoryOf(::UpdateProfileUseCase)
+    factoryOf(::DeleteAccountUseCase)
 
     // Quote Use Cases
     factoryOf(::GetDailyQuoteUseCase)
